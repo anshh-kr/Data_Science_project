@@ -1,0 +1,415 @@
+---
+title: "Synthetic Insurance Analysis"
+author: "Anshu Kumar & Sonu Kumar"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#Load Necessary Libraries
+```{r}
+library(tidyverse)
+library(dplyr)
+library(readr)
+library(MASS)
+library(ggplot2)
+library(GGally)
+```
+*Firstly we take important Libraries so we can perform our next task*
+
+# 1. Data Understanding
+# Load Dataset
+```{r}
+insurance_data = read_csv("C:/Users/LENOVO/Downloads/insurance.zip")
+View(insurance_data)
+```
+*We started by loading the insurance dataset using read_csv() and viewed it with View() to familiarize ourselves with the data.*
+
+#Look the structure & Summarization of dataset
+```{r}
+glimpse(insurance_data)
+```
+
+```{r}
+summary(insurance_data)
+```
+*We then used glimpse() to get a quick overview of the dataset's structure and summary() to understand the statistical properties of each variable.*
+
+# 2. Data Cleaning
+# Check for Missing Values
+```{r}
+sum(is.na(insurance_data))
+```
+*We checked for any missing values using sum(is.na()) and found whether our data was complete.*
+
+#Remove Duplicate Records
+```{r}
+insurance_data = distinct(insurance_data)
+distinct(insurance_data)
+```
+*We removed any duplicate records by applying distinct(), ensuring that our dataset only contains unique observations.*
+
+# 3. Descriptive Analysis
+# Average age of policyholders
+```{r}
+average_age = mean(insurance_data$Age)
+print(paste("Average Age:", average_age))
+```
+*We calculated the average age of the policyholders to understand the typical customer profile.*
+
+#Proportion of senior citizens
+```{r}
+proportion_senior = mean(insurance_data$Is_Senior)
+print(paste("Proportion of Senior Citizens:", proportion_senior))
+```
+*We found the proportion of senior citizens by taking the mean of the Is_Senior column.*
+
+#Distribution of marital status
+```{r}
+marital_status_dist = insurance_data %>%
+  group_by(Marital_Status) %>%
+  summarise(count = n())
+print(marital_status_dist)
+```
+*We examined the distribution of marital status by grouping and counting the number of policyholders in each category.*
+
+#Average premium amount
+```{r}
+average_premium = mean(insurance_data$Premium_Amount)
+print(paste("Average Premium Amount:", average_premium))
+```
+*We computed the average premium amount to get a sense of the typical insurance cost.*
+
+#Average premium amount for each region
+```{r}
+average_premium_region = insurance_data %>%
+  group_by(Region) %>%
+  summarise(average_premium = mean(Premium_Amount))
+print(average_premium_region)
+```
+*We analyzed the average premium amount across different regions to see if there were any geographical differences.*
+
+#Distribution of claims frequency
+```{r}
+claims_frequency_dist = insurance_data %>%
+  group_by(Claims_Frequency) %>%
+  summarise(count = n())
+print(claims_frequency_dist)
+```
+*We explored the distribution of claims frequency by counting occurrences in category.*
+
+#Distribution of claims severity
+```{r}
+claims_severity_dist = insurance_data %>%
+  group_by(Claims_Severity) %>%
+  summarise(count = n())
+print(claims_severity_dist)
+```
+*We explored the distribution of claims severity by counting occurrences in category.*
+
+#Average age by marital status
+```{r}
+average_age_marital_status = insurance_data %>%
+  group_by(Marital_Status) %>%
+  summarise(average_age = mean(Age))
+print(average_age_marital_status)
+```
+*We calculated the average age by marital status to check if age varies between different marital statuses.*
+
+#Most common claims severity
+```{r}
+common_claims_severity = insurance_data %>%
+  group_by(Claims_Severity) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  slice(1)
+print(common_claims_severity)
+```
+*We identified the most common claims severity level among the policyholders.*
+
+# 4. Correlation and Relationship Analysis
+#Correlation between Age and Premium Amount
+```{r}
+correlation_age_premium = cor(insurance_data$Age, insurance_data$Premium_Amount)
+print(paste("Correlation between Age and Premium Amount:", correlation_age_premium))
+```
+*We calculated the correlation between age and premium amount to understand if age impacts how much premium a person pays.*
+
+#Correlation between Prior Insurance Premium Adjustment and Current Premium Amount
+```{r}
+correlation_prior_current_premium = cor(
+  insurance_data$Prior_Insurance_Premium_Adjustment,
+  insurance_data$Premium_Amount)
+print(paste("Correlation between Prior Insurance Premium Adjustment and Current Premium Amount:", correlation_prior_current_premium))
+```
+*We measured the correlation between prior insurance premium adjustments and current premium amounts to see if there was any relationship.*
+
+#Effect of Prior Insurance on Claims Frequency and Severity
+```{r}
+prior_insurance_effect = insurance_data %>%
+  group_by(Prior_Insurance) %>%
+  summarise(
+    average_claims_frequency = mean(Claims_Frequency),
+    average_claims_severity = mean(as.numeric(Claims_Severity))
+  )
+print(prior_insurance_effect)
+```
+*We analyzed how prior insurance affects claims frequency and severity by grouping and summarizing the data.*
+
+#Relationship between Policy Type and Premium Amount
+```{r}
+policy_type_premium = insurance_data %>%
+  group_by(Policy_Type) %>%
+  summarise(average_premium = mean(Premium_Amount))
+print(policy_type_premium)
+```
+*We checked how the type of policy affects the average premium by grouping data by Policy_Type.*
+
+#Categorizing Credit Score Ranges
+```{r}
+insurance_data = insurance_data %>%
+  mutate(Credit_Score_Range = case_when(
+    Credit_Score >= 750 ~ "Excellent (750+)",
+    Credit_Score >= 700 & Credit_Score < 750 ~ "Good (700-749)",
+    Credit_Score >= 650 & Credit_Score < 700 ~ "Fair (650-699)",
+    Credit_Score < 650 ~ "Poor (<650)"
+  ))
+```
+*We categorized credit scores into meaningful ranges (Excellent, Good, Fair, Poor) to better segment the customers.*
+*Its create One another Column in dataset*
+
+#Average premium amount by Credit Score Range
+```{r}
+average_premium_credit_score = insurance_data %>%
+  group_by(Credit_Score_Range) %>%
+  summarise(average_premium = mean(Premium_Amount))
+print(average_premium_credit_score)
+```
+*We calculated the average premium amount for each credit score range to see if creditworthiness affects premiums.*
+
+#Premium differences by Marital Status
+```{r}
+premium_marital_status = insurance_data %>%
+  group_by(Marital_Status) %>%
+  summarise(average_premium = mean(Premium_Amount))
+print(premium_marital_status)
+```
+*We compared premium differences across different marital statuses.*
+
+#Claims Frequency differences by Policy Type
+```{r}
+claims_frequency_policy = insurance_data %>%
+  group_by(Policy_Type) %>%
+  summarise(average_claims_frequency = mean(Claims_Frequency))
+print(claims_frequency_policy)
+```
+*We examined how claims frequency varies across different policy types.*
+
+#Claims Adjustment by Policy Type
+```{r}
+claims_adjustment_policy = insurance_data %>%
+  group_by(Policy_Type) %>%
+  summarise(average_claims_adjustment = mean(Claims_Adjustment))
+print(claims_adjustment_policy)
+```
+*We studied how claims adjustment differs between various policy types.*
+
+#Effect of Prior Insurance Premium Adjustment on Current Premium Amount
+```{r}
+effect_prior_insurance = insurance_data %>%
+  group_by(Prior_Insurance_Premium_Adjustment) %>%
+  summarise(average_current_premium = mean(Premium_Amount))
+print(effect_prior_insurance)
+```
+*We studied how claims adjustment differs between various policy types.*
+
+#Effect of Claims Adjustment on Premium Amount
+```{r}
+effect_claims_adjustment = insurance_data %>%
+  group_by(Claims_Adjustment) %>%
+  summarise(average_premium_amount = mean(Premium_Amount))
+print(effect_claims_adjustment)
+```
+*We also explored how claims adjustment levels are related to premium amounts.*
+
+# 5. Data Regression
+#Predict Premium Amount based on Age and Credit Score
+```{r}
+Predict_Premium_Amount = lm(Premium_Amount ~ Age + Credit_Score, data = insurance_data)
+summary(Predict_Premium_Amount)
+```
+*We built a linear regression model to predict premium amount based on age and credit score.This helped us understand the impact of these factors on the premium.*
+*summary() tells you how well the model fits, coefficients, R-squared, etc.*
+
+#Predict Claims Frequency based on Age, Credit Score, and Prior Insurance
+```{r}
+Predict_Claims_Frequency = lm(Claims_Frequency ~ Age + Credit_Score + Prior_Insurance, data = insurance_data)
+summary(Predict_Claims_Frequency)
+```
+*We developed another linear regression model to predict claims frequency using age, credit score, and prior insurance status.*
+*This model allowed us to study the factors affecting how often customers make claims.*
+
+# 6. ANOVA Test
+#Premium Amount difference across Marital Status
+```{r}
+Premium_Amount_Across_Marital_Status = aov(Premium_Amount ~ Marital_Status, data = insurance_data)
+summary(Premium_Amount_Across_Marital_Status)
+```
+*We performed a one-way ANOVA to determine whether the average Premium Amount differs significantly across different Marital Status groups (Single, Married, Divorced, etc.).*
+
+*Null Hypothesis (H₀): There is no difference in Premium Amount between marital status groups.*
+*Alternative Hypothesis (H₁): At least one group has a different mean Premium Amount*
+*If the p-value is less than 0.05, we reject the null hypothesis, meaning that marital status does impact the Premium Amount.*
+*Conclusion Example:*
+*If p-value = 0.002 → "There is a significant difference in Premium Amount between marital status groups."*
+
+
+#Claims Frequency difference across Policy Type
+```{r}
+Claims_Frequency_across_Policy_Type = aov(Claims_Frequency ~ Policy_Type, data = insurance_data)
+summary(Claims_Frequency_across_Policy_Type)
+```
+*We conducted a one-way ANOVA to check if the Claims Frequency significantly varies across different Policy Types.*
+*Null Hypothesis (H₀): The mean Claims Frequency is the same for all Policy Types.*
+*Alternative Hypothesis (H₁): At least one Policy Type has a different mean Claims Frequency.*
+*If the p-value is less than 0.05, we conclude that Policy Type affects how frequently claims are made.*
+*Conclusion Example:*
+*If p-value = 0.01 → "There is a significant difference in Claims Frequency between Policy Types, indicating that certain policy types are riskier."*
+
+#Premium Amount difference across Regions
+```{r}
+Premium_Amount_difference_across_Regions = aov(Premium_Amount ~ Region, data = insurance_data)
+summary(Premium_Amount_difference_across_Regions)
+```
+*We performed a one-way ANOVA to investigate whether the Premium Amount significantly differs across different Regions.*
+*Null Hypothesis (H₀): The mean Premium Amount is the same across all regions.*
+*Alternative Hypothesis (H₁): At least one region has a different mean Premium Amount.*
+*A p-value less than 0.05 would suggest that the Premium Amount varies significantly by Region.*
+*Conclusion Example:*
+*If p-value = 0.04 → "Premiums differ significantly across regions, suggesting that geographic factors influence pricing."*
+
+# 7. Data Visualization
+#Website Visits vs Premium Amount 
+```{r}
+ggplot(insurance_data, aes(x = Website_Visits, y = Premium_Amount)) +
+  geom_point(alpha = 0.5, color = "purple") +
+  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  labs(title = "Relationship Between Website Visits and Premium Amount",
+       x = "Website Visits", y = "Premium Amount") +
+  theme_minimal()
+```
+*We visualized the relationship between website visits and premium amount using a scatter plot with a linear trend line.*
+
+#Boxplot of Age by Marital Status
+```{r}
+ggplot(insurance_data, aes(x = Marital_Status, y = Age, fill = Marital_Status)) +
+  geom_boxplot(outlier.color = "red", notch = TRUE) +
+  labs(title = "Boxplot of Age by Marital Status", x = "Marital Status", y = "Age") +
+  theme_minimal()
+```
+*We created a boxplot to compare the age distributions across different marital statuses.*
+
+#Histogram of Credit Score
+```{r}
+ggplot(insurance_data, aes(x = Credit_Score)) +
+  geom_histogram(binwidth = 5, fill = "green", color = "black") +
+  labs(title = "Histogram of Credit Score", x = "Credit Score") +
+  theme_minimal()
+```
+*We plotted a histogram to explore the distribution of credit scores among policyholders.*
+
+#Customer Distribution across Regions
+```{r}
+insurance_data %>%
+  group_by(Region) %>%
+  summarise(Count = n()) %>%
+  ggplot(aes(x = "", y = Count, fill = Region)) +
+  geom_col(width = 1) +
+  coord_polar(theta = "y") +
+  labs(title = "Distribution of Customers Across Regions") +
+  theme_void()
+```
+*We displayed the customer distribution across different regions using a pie chart to understand regional variations.*
+
+#Claims Severity Distribution
+```{r}
+insurance_data %>%
+  group_by(Claims_Severity) %>%
+  summarise(Count = n()) %>%
+  ggplot(aes(x = "", y = Count, fill = Claims_Severity)) +
+  geom_col(width = 1) +
+  coord_polar(theta = "y") +
+  labs(title = "Distribution of Claims Severity") +
+  theme_void()
+```
+*We visualized the distribution of claims severity levels using both a pie chart and a bar chart.*
+
+#Premium Amount by Credit Score Range 
+```{r}
+insurance_data %>%
+  group_by(Credit_Score_Range) %>%
+  summarise(Average_Premium = mean(Premium_Amount, na.rm = TRUE)) %>%
+  ggplot(aes(x = Credit_Score_Range, y = Average_Premium, fill = Credit_Score_Range)) +
+  geom_col() +
+  labs(title = "Average Premium by Credit Score Range", x = "Credit Score Range", y = "Average Premium") +
+  theme_minimal()
+```
+*We showed how average premium amounts vary across different credit score ranges with a bar chart.*
+
+#Senior vs Non-Senior Citizens Distribution
+```{r}
+insurance_data %>%
+  mutate(Senior_Status = ifelse(Is_Senior == 1, "Senior Citizen", "Non-Senior")) %>%
+  group_by(Senior_Status) %>%
+  summarise(Count = n()) %>%
+  ggplot(aes(x = "", y = Count, fill = Senior_Status)) +
+  geom_col(width = 1) +
+  coord_polar(theta = "y") +
+  labs(title = "Senior Citizens vs Non-Senior Citizens") +
+  theme_void()
+```
+*We compared the number of senior and non-senior citizens using a pie chart to understand the senior citizen customer base.*
+
+#Claims Severity Distribution
+```{r}
+insurance_data %>%
+  group_by(Claims_Severity) %>%
+  summarise(Count = n()) %>%
+  ggplot(aes(x = Claims_Severity, y = Count, fill = Claims_Severity)) +
+  geom_col() +
+  labs(title = "Distribution of Claims Severity", x = "Claims Severity Level", y = "Number of Policyholders") +
+  theme_minimal()
+```
+*We visualized claims severity distribution again through a bar chart for a different perspective.*
+
+#How does the Average Premium Amount change with increasing Age?
+```{r}
+age_premium_trend <- insurance_data %>%
+  group_by(Age) %>%
+  summarise(Average_Premium = mean(Premium_Amount, na.rm = TRUE))
+
+ggplot(age_premium_trend, aes(x = Age, y = Average_Premium)) +
+  geom_line(color = "blue", size = 1) +
+  geom_point(color = "red", size = 1.5) +
+  labs(title = "Trend of Average Premium Amount with Age",
+       x = "Age of Policyholders",
+       y = "Average Premium Amount") +
+  theme_minimal()
+```
+*The line chart shows how the average premium amount changes as the age of policyholders increases.*
+*A rising trend would suggest that older customers generally pay higher premiums, possibly due to increased insurance risks.*
+*Any dips might suggest discounts or different premium structures for certain age groups.*
+
+#Pairplot of Selected Features
+```{r}
+insurance_subset <- insurance_data[, c("Premium_Amount", "Total_Discounts", "Credit_Score", "Region")]
+ggpairs(insurance_subset,
+        columns = 1:4,
+        aes(color = Region),
+        title = "Pairplot of Selected Features from Insurance Dataset")
+```
+*Finally, we created a pairplot of selected features — Premium Amount, Total Discounts, Credit Score, and Region — to study the relationships between these important variables.*
